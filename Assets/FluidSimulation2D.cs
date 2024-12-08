@@ -3,6 +3,8 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+using static UnityEngine.ParticleSystem;
+
 public class FluidSimulation2D : MonoBehaviour {
 	public Texture2D renderTexture;
 	public int numParticles = 256;
@@ -52,6 +54,9 @@ public class FluidSimulation2D : MonoBehaviour {
 
 			// apply movement to the particle
 			particle.Move();
+
+			// Check for collisions and apply forces
+			// Collision(particle); this is WIP and doesn't work
 		}
 
 		renderTexture.Apply();
@@ -63,15 +68,28 @@ public class FluidSimulation2D : MonoBehaviour {
 			particle.ResetSimulation(renderTexture.width, renderTexture.height);
 		}
 	}
+
+	private void Collision (SimulatedParticle particle) {
+		// Check for all other particles which may occupy the same space
+		foreach (SimulatedParticle other in particles) {
+			if (other.position == particle.position) {
+				// We have a collision! Apply forces
+				Vector2 particleVelocity = particle.velocity;
+				particle.velocity += -other.velocity;
+				other.velocity += -particleVelocity;
+			}
+		}
+	}
 }
 
 class SimulatedParticle {
 	public Vector2 position;
 	public Vector2 velocity;
-	float gravityConstant = -1;
+	public float gravityConstant = -1;
 	int boundaryX;
 	int boundaryY;
-	float drag = 0.9f;
+	public float drag = 0.9f;
+	public float friction = 0.1f;
 	public SimulatedParticle (int width, int height) {
 		ResetSimulation(width, height);
 
@@ -85,7 +103,7 @@ class SimulatedParticle {
 		velocity.x = Random.Range(-1, 1);
 	}
 
-	public void Move() {
+	public void Move () {
 		velocity.y += gravityConstant;
 
 		position.x += velocity.x;
@@ -109,6 +127,12 @@ class SimulatedParticle {
 		if (position.y > boundaryY) {
 			velocity.y = -position.y * drag;
 			position.y = boundaryY;
+		}
+
+		// apply friction on bottom
+		if (position.y == boundaryY) {
+			// apply friction to x
+			velocity.x = velocity.x * friction;
 		}
 	}
 }
