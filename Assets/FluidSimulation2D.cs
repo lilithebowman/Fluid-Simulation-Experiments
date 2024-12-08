@@ -25,9 +25,6 @@ public class FluidSimulation2D : MonoBehaviour {
 		for (int i = 0; i < numParticles; i++) {
 			particles[i] = new SimulatedParticle(renderTexture.width, renderTexture.height);
 		}
-		Debug.Log(particles);
-		Debug.Log(particles.Length);
-		Debug.Log(particles[0].position);
 	}
 
 	// Update is called once per frame
@@ -79,12 +76,24 @@ class SimulatedParticle {
 		position.y += velocity.y;
 
 		// If we hit the sides, bounce back
-		if (position.x < 0) velocity.x = -velocity.x + drag;
-		if (position.x > boundaryX) velocity.x = -velocity.x + drag;
+		if (position.x < 0) {
+			velocity.x = -velocity.x + drag;
+			position.x = 0;
+		} else
+		if (position.x > boundaryX) {
+			velocity.x = -velocity.x + drag;
+			position.x = boundaryX;
+		}
 
 		// if we hit the top or bottom, bounce back
-		if (position.y < 0) velocity.y = -velocity.y + drag;
-		if (position.y > boundaryY) velocity.y = -position.y + drag;
+		if (position.y < 0) {
+			velocity.y = -velocity.y + drag;
+			position.y = 0;
+		} else
+		if (position.y > boundaryY) {
+			velocity.y = -position.y + drag;
+			position.y = boundaryY;
+		}
 	}
 }
 
@@ -130,11 +139,6 @@ class JustForFun {
 				averageB /= 9;
 				renderTexture.SetPixel(x, y, new Color(averageR, averageG, averageB));
 			}
-		}
-
-		// Add some new random pixels each frame
-		for (int i = 0; i < renderTexture.height; i++) {
-			renderTexture.SetPixel(Random.Range(0, renderTexture.width), Random.Range(0, renderTexture.height), new Color(Random.value, Random.value, Random.value));
 		}
 	}
 }
