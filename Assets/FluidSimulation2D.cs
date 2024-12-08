@@ -25,10 +25,14 @@ public class FluidSimulation2D : MonoBehaviour {
 		for (int i = 0; i < numParticles; i++) {
 			particles[i] = new SimulatedParticle(renderTexture.width, renderTexture.height);
 		}
+
+		// Reset the simulation periodically every 10 seconds after 10 seconds
+		InvokeRepeating("ResetParticle", 10.0f, 10.0f);
 	}
 
 	// Update is called once per frame
 	void Update () {
+
 		// Clear the texture
 		for (int y = 0; y < renderTexture.height; y++) {
 			for (int x = 0; x < renderTexture.width; x++) {
@@ -38,6 +42,7 @@ public class FluidSimulation2D : MonoBehaviour {
 
 		// Display and simulat the particles
 		foreach (SimulatedParticle particle in particles) {
+
 			// render the particle's current position
 			renderTexture.SetPixel(
 				(int) particle.position.x,
@@ -51,6 +56,13 @@ public class FluidSimulation2D : MonoBehaviour {
 
 		renderTexture.Apply();
 	}
+
+	public void ResetParticle () {
+		// Display and simulat the particles
+		foreach (SimulatedParticle particle in particles) {
+			particle.ResetSimulation(renderTexture.width, renderTexture.height);
+		}
+	}
 }
 
 class SimulatedParticle {
@@ -59,14 +71,18 @@ class SimulatedParticle {
 	float gravityConstant = -1;
 	int boundaryX;
 	int boundaryY;
-	float drag = -0.5f;
+	float drag = 0.9f;
 	public SimulatedParticle (int width, int height) {
-		position = new Vector2(Random.Range(0, width), Random.Range(0, height));
-		velocity = Vector2.zero;
-		velocity.x = Random.Range(-1, 1);
+		ResetSimulation(width, height);
 
 		boundaryX = width;
 		boundaryY = height;
+	}
+
+	public void ResetSimulation(int width, int height) {
+		position = new Vector2(Random.Range(0, width), Random.Range(0, height));
+		velocity = Vector2.zero;
+		velocity.x = Random.Range(-1, 1);
 	}
 
 	public void Move() {
@@ -77,21 +93,21 @@ class SimulatedParticle {
 
 		// If we hit the sides, bounce back
 		if (position.x < 0) {
-			velocity.x = -velocity.x + drag;
+			velocity.x = -velocity.x * drag;
 			position.x = 0;
 		} else
 		if (position.x > boundaryX) {
-			velocity.x = -velocity.x + drag;
+			velocity.x = -velocity.x * drag;
 			position.x = boundaryX;
 		}
 
 		// if we hit the top or bottom, bounce back
 		if (position.y < 0) {
-			velocity.y = -velocity.y + drag;
+			velocity.y = -velocity.y * drag;
 			position.y = 0;
 		} else
 		if (position.y > boundaryY) {
-			velocity.y = -position.y + drag;
+			velocity.y = -position.y * drag;
 			position.y = boundaryY;
 		}
 	}
