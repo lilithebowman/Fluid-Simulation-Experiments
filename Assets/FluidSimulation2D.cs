@@ -103,10 +103,16 @@ public class FluidSimulation2D : MonoBehaviour {
 
 		// Update the x-indexed array
 		// Slot the particle into the x-index based on its X-position
+		if (particleIndex.particlesX[(int) particle.position.x] == null) {
+			particleIndex.particlesX[(int) particle.position.x] = new List<SimulatedParticle>();
+		}
 		particleIndex.particlesX[(int) particle.position.x].Add(particle);
 
 		// Update the y-indexed array
 		// Slot the partticle into the y-index based on its Y-position
+		if (particleIndex.particlesY[(int) particle.position.y] == null) {
+			particleIndex.particlesY[(int) particle.position.y] = new List<SimulatedParticle>();
+		}
 		particleIndex.particlesY[(int) particle.position.y].Add(particle);
 	}
 }
