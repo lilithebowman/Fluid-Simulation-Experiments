@@ -78,13 +78,36 @@ public class FluidSimulation2D : MonoBehaviour {
 	}
 
 	private void Collision (SimulatedParticle particle) {
-		int kernelSize = 1;
+		int kernelSize = 1; // check 1 pixel in each direction (in a square)
 
 		// Check for all other particles which may occupy the same space
-		for (int y = -kernelSize; y < kernelSize; y++) {
-			for (int x = -kernelSize; x < kernelSize; x++) {
-				// check against the merged together x-indexed and y-indexed arrays
-				foreach (SimulatedParticle other in particleIndex.particlesX[x].Concat(particleIndex.particlesY[y])) {
+		// Starting at the position of the particle minus the kernel size
+		// cycle through all closeby particles
+		// to detect and handle collisions
+		int starty = (int) particle.position.y - kernelSize;
+		if (starty < 0) { starty = 0; }
+		for (int y = starty; y < kernelSize && y < particleIndex.particlesY.Length; y++) {
+			if (particleIndex != null && particleIndex.particlesY[y] != null) {
+				foreach (SimulatedParticle other in particleIndex.particlesY[y]) {
+					if (other.position == particle.position) {
+						// We have a collision! Apply forces
+						Vector2 particleVelocity = particle.velocity;
+						particle.velocity += -other.velocity;
+						other.velocity += -particleVelocity;
+					}
+				}
+			}
+		}
+
+		// Check for all other particles which may occupy the same space
+		// Starting at the position of the particle minus the kernel size
+		// cycle through all closeby particles
+		// to detect and handle collisions
+		int startx = (int) particle.position.y - kernelSize;
+		if (startx < 0) { startx = 0; }
+		for (int x = startx; x < kernelSize && x < particleIndex.particlesX.Length; x++) {
+			if (particleIndex != null && particleIndex.particlesX[x] != null) {
+				foreach (SimulatedParticle other in particleIndex.particlesX[x]) {
 					if (other.position == particle.position) {
 						// We have a collision! Apply forces
 						Vector2 particleVelocity = particle.velocity;
