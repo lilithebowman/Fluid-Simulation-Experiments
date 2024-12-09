@@ -93,33 +93,25 @@ public class FluidSimulation2D : MonoBehaviour {
 		// Check for all other particles which may occupy the same space
 		List<SimulatedParticle> yParticles = particleIndex.particlesY[xpos];
 		for (int i = 0; i < yParticles.Count; i++) {
-			if (yParticles[i].position + yParticles[i].velocity == particle.position) {
+			if (particle.position == yParticles[i].position) {
 				// We have a collision! Apply forces
 
-				// Calculate a vector force between the particle and the other particle
-				Vector2 particleForce = Vector2.up;
-
-				// apply the force to the particle
-				particle.velocity += particleForce;
-
-				// apply the opposite force to the other particle
-				yParticles[i].velocity -= particleForce;
+				// calculate a vector between the particle's next position and the other's next position
+				Vector2 forceVector = Vector2.up;
+				particle.position += forceVector;
+				yParticles[i].position -= forceVector;
 			}
 		}
 
 		List<SimulatedParticle> xParticles = particleIndex.particlesX[xpos];
 		for (int i = 0; i < xParticles.Count; i++) {
-			if (xParticles[i].position + xParticles[i].velocity == particle.position) {
+			if (particle.position == xParticles[i].position) {
 				// We have a collision! Apply forces
 
-				// Calculate a vector force between the particle and the other particle
-				Vector2 particleForce = Vector2.right;
-
-				// apply the force to the particle
-				particle.velocity += particleForce;
-
-				// apply the opposite force to the other particle
-				xParticles[i].velocity -= particleForce;
+				// calculate a vector between the particle's next position and the other's next position
+				Vector2 forceVector = Vector2.up;
+				particle.position += forceVector;
+				xParticles[i].position -= forceVector;
 			}
 		}
 	}
@@ -173,10 +165,10 @@ class ParticleIndex {
 class SimulatedParticle {
 	public Vector2 position;
 	public Vector2 velocity;
-	public float gravityConstant = -1;
+	public float gravityConstant = -0.962f;
 	int boundaryX;
 	int boundaryY;
-	public float drag = 0.9f;
+	public float drag = 0.3f;
 	public float friction = 0.1f;
 	public SimulatedParticle (int width, int height) {
 		ResetSimulation(width, height);
@@ -188,7 +180,6 @@ class SimulatedParticle {
 	public void ResetSimulation(int width, int height) {
 		position = new Vector2(Random.Range(0, width), Random.Range(0, height));
 		velocity = Vector2.zero;
-		velocity.x = Random.Range(-1, 1);
 	}
 
 	public void Move () {
