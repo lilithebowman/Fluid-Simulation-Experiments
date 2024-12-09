@@ -31,7 +31,7 @@ public class FluidSimulation2D : MonoBehaviour {
 		particles = new SimulatedParticle[numParticles];
 		for (int i = 0; i < numParticles; i++) {
 			particles[i] = new SimulatedParticle(renderTexture.width, renderTexture.height);
-			particleIndex = new ParticleIndex(numParticles, renderTexture.width, renderTexture.height);
+			particleIndex = new ParticleIndex(renderTexture.width, renderTexture.height);
 		}
 
 		// Reset the simulation periodically every 10 seconds after 10 seconds
@@ -83,10 +83,8 @@ public class FluidSimulation2D : MonoBehaviour {
 		// Check for all other particles which may occupy the same space
 		for (int y = -kernelSize; y < kernelSize; y++) {
 			for (int x = -kernelSize; x < kernelSize; x++) {
-				// check against x-indexed and y-indexed arrays
-				SimulatedParticle[] otherParticles = particleIndex.particlesX[x];
-				otherParticles.Concat (particleIndex.particlesY[y]);
-				foreach (SimulatedParticle other in otherParticles) {
+				// check against the merged together x-indexed and y-indexed arrays
+				foreach (SimulatedParticle other in particleIndex.particlesX[x].Concat(particleIndex.particlesY[y])) {
 					if (other.position == particle.position) {
 						// We have a collision! Apply forces
 						Vector2 particleVelocity = particle.velocity;
@@ -101,25 +99,25 @@ public class FluidSimulation2D : MonoBehaviour {
 	private void UpdateParticleIndices(SimulatedParticle particle) {
 		// Create a fresh array
 		particleIndex = null;
-		particleIndex = new ParticleIndex(numParticles, renderTexture.width, renderTexture.height);
+		particleIndex = new ParticleIndex(renderTexture.width, renderTexture.height);
 
 		// Update the x-indexed array
 		// Slot the particle into the x-index based on its X-position
-		particleIndex.particlesX[(int) particle.position.x, particleIndex.particlesX.Length] = particle;
+		particleIndex.particlesX[(int) particle.position.x].Add(particle);
 
 		// Update the y-indexed array
 		// Slot the partticle into the y-index based on its Y-position
-		particleIndex.particlesY[(int) particle.position.y, particleIndex.particlesY.Length] = particle;
+		particleIndex.particlesY[(int) particle.position.y].Add(particle);
 	}
 }
 
 class ParticleIndex {
-	public SimulatedParticle[,] particlesX; // an X-indexed array of particles for quick lookup
-	public SimulatedParticle[,] particlesY; // a Y-indexed array of particles for quick lookup
+	public List<SimulatedParticle>[] particlesX; // an X-indexed array of particles for quick lookup
+	public List<SimulatedParticle>[] particlesY; // a Y-indexed array of particles for quick lookup
 
-	public ParticleIndex(int size, int width, int height) {
-		particlesX = new SimulatedParticle[width, size];
-		particlesY = new SimulatedParticle[height, size];
+	public ParticleIndex(int width, int height) {
+		particlesX = new List<SimulatedParticle>[width];
+		particlesY = new List<SimulatedParticle>[height];
 	}
 }
 
