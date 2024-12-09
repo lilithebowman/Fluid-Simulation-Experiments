@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 using Unity.VisualScripting;
 
 using UnityEngine;
@@ -9,6 +12,8 @@ public class FluidSimulation2D : MonoBehaviour {
 	public Texture2D renderTexture;
 	public int numParticles = 256;
 	SimulatedParticle[] particles;
+
+	private ParticleIndex particleIndex;
 
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
 	void Start () {
@@ -26,6 +31,7 @@ public class FluidSimulation2D : MonoBehaviour {
 		particles = new SimulatedParticle[numParticles];
 		for (int i = 0; i < numParticles; i++) {
 			particles[i] = new SimulatedParticle(renderTexture.width, renderTexture.height);
+			particleIndex = new ParticleIndex(numParticles, renderTexture.width, renderTexture.height);
 		}
 
 		// Reset the simulation periodically every 10 seconds after 10 seconds
@@ -44,6 +50,8 @@ public class FluidSimulation2D : MonoBehaviour {
 
 		// Display and simulat the particles
 		foreach (SimulatedParticle particle in particles) {
+			// Update the index arrays
+			UpdateParticleIndices(particle);
 
 			// render the particle's current position
 			renderTexture.SetPixel(
@@ -56,7 +64,7 @@ public class FluidSimulation2D : MonoBehaviour {
 			particle.Move();
 
 			// Check for collisions and apply forces
-			// Collision(particle); this is WIP and doesn't work
+			Collision(particle); // this is WIP and doesn't work
 		}
 
 		renderTexture.Apply();
@@ -70,15 +78,48 @@ public class FluidSimulation2D : MonoBehaviour {
 	}
 
 	private void Collision (SimulatedParticle particle) {
+		int kernelSize = 1;
+
 		// Check for all other particles which may occupy the same space
-		foreach (SimulatedParticle other in particles) {
-			if (other.position == particle.position) {
-				// We have a collision! Apply forces
-				Vector2 particleVelocity = particle.velocity;
-				particle.velocity += -other.velocity;
-				other.velocity += -particleVelocity;
+		for (int y = -kernelSize; y < kernelSize; y++) {
+			for (int x = -kernelSize; x < kernelSize; x++) {
+				// check against x-indexed and y-indexed arrays
+				SimulatedParticle[] otherParticles = particleIndex.particlesX[x];
+				otherParticles.Concat (particleIndex.particlesY[y]);
+				foreach (SimulatedParticle other in otherParticles) {
+					if (other.position == particle.position) {
+						// We have a collision! Apply forces
+						Vector2 particleVelocity = particle.velocity;
+						particle.velocity += -other.velocity;
+						other.velocity += -particleVelocity;
+					}
+				}
 			}
 		}
+	}
+
+	private void UpdateParticleIndices(SimulatedParticle particle) {
+		// Create a fresh array
+		particleIndex = null;
+		particleIndex = new ParticleIndex(numParticles, renderTexture.width, renderTexture.height);
+
+		// Update the x-indexed array
+		// Slot the particle into the x-index based on its X-position
+		particleIndex.particlesX[(int) particle.position.x, particleIndex.particlesX.Length] = particle;
+
+		// Update the y-indexed array
+		// Slot the partticle into the y-index based on its Y-position
+		particleIndex.particlesY[(int) particle.position.y, particleIndex.particlesY.Length] = particle;
+	}
+}
+
+class ParticleIndex {
+	public SimulatedParticle[,] particlesX; // an X-indexed array of particles for quick lookup
+	public SimulatedParticle[,] particlesY; // a Y-indexed array of particles for quick lookup
+
+	public ParticleIndex(int size, int width, int height) {
+		particlesX = new SimulatedParticle[width, size];
+		particlesY = new SimulatedParticle[height, size];
 	}
 }
 
