@@ -37,7 +37,7 @@ public class FluidSimulation2D : MonoBehaviour {
 		particleIndex = new ParticleIndex(renderTexture.width, renderTexture.height);
 
 		// Reset the simulation periodically every 10 seconds after 10 seconds
-		InvokeRepeating("ResetParticle", 10.0f, 10.0f);
+		// InvokeRepeating("ResetParticle", 10.0f, 10.0f);
 	}
 
 	// Update is called once per frame
@@ -91,23 +91,35 @@ public class FluidSimulation2D : MonoBehaviour {
 		if (ypos >= particleIndex.particlesY.Length) { ypos = particleIndex.particlesY.Length - 1; }
 
 		// Check for all other particles which may occupy the same space
-		foreach (SimulatedParticle other in particleIndex.particlesY[ypos]) {
-			if (other.position + other.velocity == particle.position) {
+		List<SimulatedParticle> yParticles = particleIndex.particlesY[xpos];
+		for (int i = 0; i < yParticles.Count; i++) {
+			if (yParticles[i].position + yParticles[i].velocity == particle.position) {
 				// We have a collision! Apply forces
-				Vector2 particleVelocity = (particle.position * particle.velocity) - (other.position * other.velocity);
-				Vector2 otherVelocity = (other.position * other.velocity) - (particle.position * particle.velocity);
-				particle.velocity = particleVelocity;
-				other.velocity = otherVelocity;
+
+				// Calculate a vector force between the particle and the other particle
+				Vector2 particleForce = Vector2.up;
+
+				// apply the force to the particle
+				particle.velocity += particleForce;
+
+				// apply the opposite force to the other particle
+				yParticles[i].velocity -= particleForce;
 			}
 		}
 
-		foreach (SimulatedParticle other in particleIndex.particlesX[xpos]) {
-			if (other.position + other.velocity == particle.position) {
+		List<SimulatedParticle> xParticles = particleIndex.particlesX[xpos];
+		for (int i = 0; i < xParticles.Count; i++) {
+			if (xParticles[i].position + xParticles[i].velocity == particle.position) {
 				// We have a collision! Apply forces
-				Vector2 particleVelocity = (particle.position * particle.velocity) - (other.position * other.velocity);
-				Vector2 otherVelocity = (other.position * other.velocity) - (particle.position * particle.velocity);
-				particle.velocity = particleVelocity;
-				other.velocity = otherVelocity;
+
+				// Calculate a vector force between the particle and the other particle
+				Vector2 particleForce = Vector2.right;
+
+				// apply the force to the particle
+				particle.velocity += particleForce;
+
+				// apply the opposite force to the other particle
+				xParticles[i].velocity -= particleForce;
 			}
 		}
 	}
