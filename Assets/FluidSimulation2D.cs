@@ -167,6 +167,7 @@ class SimulatedParticle {
 	int boundaryY;
 	public float drag = 3.0f;
 	public float friction = 1.0f;
+
 	public SimulatedParticle (int width, int height) {
 		ResetSimulation(width, height);
 
@@ -194,8 +195,45 @@ class SimulatedParticle {
 	}
 
 	private float SmoothingKernel(float radius, float distance) {
+		float volume = Mathf.PI * Mathf.Pow(radius, 8) / 4;
 		float value = Mathf.Max(0, radius - distance);
-		return value * value * value;
+		return value * value * value / volume;
+	}
+
+	public float CalculateDensity(Vector2 samplePoint, float smoothingRadius, Vector2[] positions) {
+		float density = 0.0f;
+		const float mass = 1.0f;
+
+		Parallel.ForEach(positions, position => {
+			float density = (samplePoint - position).magnitude;
+			float influence = SmoothingKernel(smoothingRadius, density);
+			density += mass * influence;
+		});
+
+		return density;
+	}
+
+	public float CalculateProperty(Vector2 samplePoint, float smoothingRadius, Vector2[] positions) {
+		float property = 0;
+
+		Parallel.ForEach(positions, position => {
+			float distance = (position - samplePoint).magnitude;
+			float influence = SmoothingKernel(distance, smoothingRadius);
+			float density = CalculateDensity(position, smoothingRadius, positions);
+		});
+
+		return property;
+	}
+
+	public Vector2 CalculatePropertyGradient(Vector2 samplepoint, float smoothingRadius, Vector2[] positions) {
+		const float stepSize = 0.001f;
+		float deltaX = CalculateProperty(samplepoint + Vector2.right * stepSize, smoothingRadius, positions)
+			- CalculateProperty(samplepoint, smoothingRadius, positions);
+		float deltaY = CalculateProperty(samplepoint + Vector2.up * stepSize, smoothingRadius, positions)
+			- CalculateProperty(samplepoint, smoothingRadius, positions);
+
+		Vector2 gradient = new Vector2(deltaX, deltaY) / stepSize;
+		return gradient;
 	}
 
 	public void ClampPositionToBoundaries() {
