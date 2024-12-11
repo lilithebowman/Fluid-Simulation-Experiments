@@ -14,6 +14,7 @@ public class FluidSimulation2D : MonoBehaviour {
 	SimulatedParticle[] particles;
 
 	private ParticleIndex particleIndex;
+	Color[] colors;
 
 	// Start is called once before the first execution of Update after the MonoBehaviour is created
 	void Start () {
@@ -21,6 +22,12 @@ public class FluidSimulation2D : MonoBehaviour {
 		renderTexture = new Texture2D(256, 256);
 		renderTexture.filterMode = FilterMode.Point;
 		renderTexture.wrapMode = TextureWrapMode.Clamp;
+
+		// Set up colour array to use in clearing the texture each freame
+		colors = new Color[renderTexture.width * renderTexture.height];
+		for (int i = 0; i < colors.Length; i++) {
+			colors[i] = Color.black;
+		}
 
 		Renderer renderer = gameObject.GetComponent<Renderer>();
 		if (renderer != null) {
@@ -42,18 +49,13 @@ public class FluidSimulation2D : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-
-		// Clear the texture
-		for (int y = 0; y < renderTexture.height; y++) {
-			for (int x = 0; x < renderTexture.width; x++) {
-				renderTexture.SetPixel(x, y, Color.black);
-			}
-		}
+		// Clear the Texture2D
+		renderTexture.SetPixels(colors);
 
 		// Display and simulat the particles
 		foreach (SimulatedParticle particle in particles) {
 			// Update the index arrays
-			UpdateParticleIndices(particle);
+			// UpdateParticleIndices(particle);
 
 			// render the particle's current position
 			renderTexture.SetPixel(
@@ -66,7 +68,7 @@ public class FluidSimulation2D : MonoBehaviour {
 			particle.Move();
 
 			// Check for collisions and apply forces
-			Collision(particle); // this is WIP and doesn't work
+			// Collision(particle); // this is WIP and doesn't work
 		}
 
 		renderTexture.Apply();
@@ -165,11 +167,11 @@ class ParticleIndex {
 class SimulatedParticle {
 	public Vector2 position;
 	public Vector2 velocity;
-	public float gravityConstant = -0.962f;
+	public float gravityConstant = 96.2f;
 	int boundaryX;
 	int boundaryY;
-	public float drag = 0.3f;
-	public float friction = 0.1f;
+	public float drag = 3.0f;
+	public float friction = 1.0f;
 	public SimulatedParticle (int width, int height) {
 		ResetSimulation(width, height);
 
@@ -183,81 +185,36 @@ class SimulatedParticle {
 	}
 
 	public void Move () {
-		velocity.y += gravityConstant;
+		velocity += Vector2.down * gravityConstant * Time.deltaTime;
+		position += velocity * Time.deltaTime;
+		ClampPositionToBoundaries();
+	}
 
-		position.x += velocity.x;
-		position.y += velocity.y;
-
+	public void ClampPositionToBoundaries() {
 		// If we hit the sides, bounce back
 		if (position.x < 0) {
-			velocity.x = -velocity.x * drag;
+			velocity.x = -velocity.x;
 			position.x = 0;
 		} else
 		if (position.x > boundaryX) {
-			velocity.x = -velocity.x * drag;
+			velocity.x = -velocity.x;
 			position.x = boundaryX;
 		}
 
 		// if we hit the top or bottom, bounce back
 		if (position.y < 0) {
-			velocity.y = -velocity.y * drag;
+			velocity.y = -velocity.y;
 			position.y = 0;
 		} else
 		if (position.y > boundaryY) {
-			velocity.y = -position.y * drag;
+			velocity.y = -position.y;
 			position.y = boundaryY;
 		}
 
 		// apply friction on bottom
 		if (position.y == boundaryY) {
 			// apply friction to x
-			velocity.x = velocity.x * friction;
-		}
-	}
-}
-
-class JustForFun {
-	public Texture2D renderTexture;
-
-	void InitializeToRandomPixels () {
-		// Set the pixels to random colours
-		for (int y = 0; y < renderTexture.width; y++) {
-			for (int x = 0; x < renderTexture.height; x++) {
-				renderTexture.SetPixel(x, y, new Color(Random.value, Random.value, Random.value));
-			}
-		}
-	}
-
-	void BoxBlur () {
-		// Using a 3x3 kernel, sample the surrounding pixels and average them each frame
-		// this will eventually cause it to smear into a grey texture
-		for (int y = 0; y < renderTexture.width; y++) {
-			for (int x = 0; x < renderTexture.height; x++) {
-				float averageR = 0;
-				float averageG = 0;
-				float averageB = 0;
-
-				Color color = renderTexture.GetPixel(x, y);
-				for (int k = -1; k <= 1; k++) {
-					for (int j = -1; j <= 1; j++) {
-						color = renderTexture.GetPixel(x + k, y + j);
-						if (k == 0 && j == 0) {
-							averageR += color.r * 2;
-							averageG += color.g * 2;
-							averageB += color.b * 2;
-						} else {
-							averageR += color.r;
-							averageG += color.g;
-							averageB += color.b;
-						}
-					}
-				}
-
-				averageR /= 9;
-				averageG /= 9;
-				averageB /= 9;
-				renderTexture.SetPixel(x, y, new Color(averageR, averageG, averageB));
-			}
+			velocity.x = velocity.x - friction;
 		}
 	}
 }
