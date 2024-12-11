@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 using Unity.VisualScripting;
 
@@ -10,7 +11,7 @@ using static UnityEngine.ParticleSystem;
 
 public class FluidSimulation2D : MonoBehaviour {
 	public Texture2D renderTexture;
-	public int numParticles = 256;
+	public int numParticles = 64;
 	SimulatedParticle[] particles;
 
 	private ParticleIndex particleIndex;
@@ -25,9 +26,9 @@ public class FluidSimulation2D : MonoBehaviour {
 
 		// Set up colour array to use in clearing the texture each freame
 		colors = new Color[renderTexture.width * renderTexture.height];
-		for (int i = 0; i < colors.Length; i++) {
+		Parallel.For (0,colors.Length, (int i) => {
 			colors[i] = Color.black;
-		}
+		});
 
 		Renderer renderer = gameObject.GetComponent<Renderer>();
 		if (renderer != null) {
@@ -52,24 +53,18 @@ public class FluidSimulation2D : MonoBehaviour {
 		// Clear the Texture2D
 		renderTexture.SetPixels(colors);
 
-		// Display and simulat the particles
-		foreach (SimulatedParticle particle in particles) {
-			// Update the index arrays
-			// UpdateParticleIndices(particle);
-
-			// render the particle's current position
-			renderTexture.SetPixel(
-				(int) particle.position.x,
-				(int) particle.position.y,
-				new Color(Mathf.Abs(particle.velocity.y), 1, Mathf.Abs(particle.velocity.x))
-			);
+		// Display and simulate the particles
+		Color[] color = new Color[renderTexture.width * renderTexture.height];
+		float deltaTime = Time.deltaTime;
+		Parallel.ForEach(particles, (SimulatedParticle particle) => {
+			// render pixels to color array in parallel
+			color[particle.GetIntPositionX() + (particle.GetIntPositionY() * renderTexture.width)] = new Color(Mathf.Abs(particle.velocity.y), 1, Mathf.Abs(particle.velocity.x));
 
 			// apply movement to the particle
-			particle.Move();
-
-			// Check for collisions and apply forces
-			// Collision(particle); // this is WIP and doesn't work
-		}
+			particle.Move(deltaTime);
+		});
+		// render the particle's current position
+		renderTexture.SetPixels(0, 0, renderTexture.width, renderTexture.height, color);
 
 		renderTexture.Apply();
 	}
@@ -184,10 +179,23 @@ class SimulatedParticle {
 		velocity = Vector2.zero;
 	}
 
-	public void Move () {
-		velocity += Vector2.down * gravityConstant * Time.deltaTime;
-		position += velocity * Time.deltaTime;
+	public void Move (float deltaTime) {
+		velocity += Vector2.down * gravityConstant * deltaTime;
+		position += velocity * deltaTime;
 		ClampPositionToBoundaries();
+	}
+
+	public int GetIntPositionX () {
+		return (int) position.x;
+	}
+
+	public int GetIntPositionY () {
+		return (int) position.y;
+	}
+
+	private float SmoothingKernel(float radius, float distance) {
+		float value = Mathf.Max(0, radius - distance);
+		return value * value * value;
 	}
 
 	public void ClampPositionToBoundaries() {
