@@ -242,9 +242,9 @@ class SimulatedParticle {
 			velocity.x = -velocity.x;
 			position.x = 0;
 		} else
-		if (position.x > boundaryX) {
+		if (position.x >= boundaryX) {
 			velocity.x = -velocity.x;
-			position.x = boundaryX;
+			position.x = boundaryX - 1;
 		}
 
 		// if we hit the top or bottom, bounce back
@@ -252,9 +252,9 @@ class SimulatedParticle {
 			velocity.y = -velocity.y;
 			position.y = 0;
 		} else
-		if (position.y > boundaryY) {
+		if (position.y >= boundaryY) {
 			velocity.y = -position.y;
-			position.y = boundaryY;
+			position.y = boundaryY - 1;
 		}
 
 		// apply friction on bottom
